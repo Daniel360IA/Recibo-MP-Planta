@@ -1,0 +1,2128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CEDI Seco - Sistema de Recepción</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --primary: #1a1a2e;
+            --secondary: #16213e;
+            --accent: #0f3460;
+            --highlight: #e94560;
+            --success: #00d09c;
+            --warning: #ffc107;
+            --danger: #dc3545;
+            --text: #eaeaea;
+            --text-muted: #8892a0;
+            --surface: #0d1b2a;
+            --surface-light: #1b263b;
+            --border: #415a77;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background: var(--primary);
+            color: var(--text);
+            min-height: 100vh;
+            background-image: 
+                radial-gradient(ellipse at top left, rgba(15, 52, 96, 0.3) 0%, transparent 50%),
+                radial-gradient(ellipse at bottom right, rgba(233, 69, 96, 0.1) 0%, transparent 50%);
+        }
+
+        /* Login Screen */
+        .login-screen {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .login-container {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 40px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .login-logo {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .login-logo h1 {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--highlight);
+            letter-spacing: -1px;
+        }
+
+        .login-logo p {
+            color: var(--text-muted);
+            font-size: 14px;
+            margin-top: 8px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 14px 16px;
+            background: var(--surface-light);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-family: inherit;
+            font-size: 15px;
+            transition: all 0.2s;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: var(--highlight);
+            box-shadow: 0 0 0 3px rgba(233, 69, 96, 0.2);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 14px 24px;
+            border: none;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--highlight);
+            color: white;
+            width: 100%;
+        }
+
+        .btn-primary:hover {
+            background: #d63851;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: var(--surface-light);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--accent);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: var(--primary);
+        }
+
+        .btn-success:hover {
+            background: #00b88a;
+        }
+
+        /* Main App */
+        .app-container {
+            display: none;
+            min-height: 100vh;
+        }
+
+        .app-header {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .header-logo {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--highlight);
+        }
+
+        .header-user {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 16px;
+            background: var(--surface-light);
+            border-radius: 8px;
+        }
+
+        .header-user span {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .header-user strong {
+            color: var(--text);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .nav-tabs {
+            display: flex;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 0 24px;
+            overflow-x: auto;
+        }
+
+        .nav-tab {
+            padding: 16px 24px;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .nav-tab:hover {
+            color: var(--text);
+        }
+
+        .nav-tab.active {
+            color: var(--highlight);
+            border-bottom-color: var(--highlight);
+        }
+
+        .main-content {
+            padding: 24px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Upload Section */
+        .upload-zone {
+            border: 2px dashed var(--border);
+            border-radius: 16px;
+            padding: 48px;
+            text-align: center;
+            background: var(--surface);
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .upload-zone:hover, .upload-zone.dragover {
+            border-color: var(--highlight);
+            background: rgba(233, 69, 96, 0.05);
+        }
+
+        .upload-zone svg {
+            width: 64px;
+            height: 64px;
+            color: var(--text-muted);
+            margin-bottom: 16px;
+        }
+
+        .upload-zone h3 {
+            font-size: 18px;
+            margin-bottom: 8px;
+        }
+
+        .upload-zone p {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-title .icon {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--accent);
+            border-radius: 6px;
+        }
+
+        /* PDF Data Display */
+        .pdf-data-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .data-item {
+            background: var(--surface-light);
+            padding: 16px;
+            border-radius: 8px;
+            border-left: 3px solid var(--accent);
+        }
+
+        .data-item.highlight {
+            border-left-color: var(--highlight);
+        }
+
+        .data-item label {
+            display: block;
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .data-item .value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        /* Reception Form */
+        .reception-form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .color-selector {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+        }
+
+        .color-option {
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: 8px;
+            border: 3px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .color-option:hover {
+            transform: scale(1.1);
+        }
+
+        .color-option.selected {
+            border-color: white;
+            box-shadow: 0 0 0 2px var(--highlight);
+        }
+
+        .color-option.selected::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-weight: bold;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+        }
+
+        /* Plant Selector */
+        .plant-selector {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+
+        .plant-option {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 16px 12px;
+            background: var(--surface-light);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .plant-option:hover {
+            border-color: var(--highlight);
+            background: rgba(233, 69, 96, 0.1);
+        }
+
+        .plant-option.selected {
+            border-color: var(--highlight);
+            background: rgba(233, 69, 96, 0.2);
+            box-shadow: 0 0 0 3px rgba(233, 69, 96, 0.3);
+        }
+
+        .plant-icon {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .plant-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .plant-option.selected .plant-name {
+            color: var(--highlight);
+        }
+
+        @media (max-width: 480px) {
+            .plant-selector {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        /* Calculations Section */
+        .calculations-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border);
+        }
+
+        .calc-item {
+            text-align: center;
+            padding: 20px;
+            background: var(--surface-light);
+            border-radius: 12px;
+        }
+
+        .calc-item.positive {
+            background: rgba(0, 208, 156, 0.1);
+            border: 1px solid var(--success);
+        }
+
+        .calc-item.negative {
+            background: rgba(220, 53, 69, 0.1);
+            border: 1px solid var(--danger);
+        }
+
+        .calc-item label {
+            display: block;
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .calc-item .value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .calc-item.positive .value {
+            color: var(--success);
+        }
+
+        .calc-item.negative .value {
+            color: var(--danger);
+        }
+
+        /* History Table */
+        .table-container {
+            overflow-x: auto;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        th, td {
+            padding: 14px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background: var(--surface-light);
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            position: sticky;
+            top: 0;
+        }
+
+        tr:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .color-badge {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            display: inline-block;
+        }
+
+        .merma-positive {
+            color: var(--success);
+            font-weight: 600;
+        }
+
+        .merma-negative {
+            color: var(--danger);
+            font-weight: 600;
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .stat-card h4 {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .stat-card .value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        /* Admin Panel */
+        .users-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .user-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px;
+            background: var(--surface-light);
+            border-radius: 8px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            background: var(--accent);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .modal-header h3 {
+            font-size: 18px;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .modal-body {
+            padding: 24px;
+        }
+
+        .modal-footer {
+            padding: 16px 24px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .toast {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            animation: slideIn 0.3s ease;
+        }
+
+        .toast.success {
+            border-left: 4px solid var(--success);
+        }
+
+        .toast.error {
+            border-left: 4px solid var(--danger);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .app-header {
+                flex-direction: column;
+                gap: 12px;
+                padding: 12px 16px;
+            }
+
+            .header-actions {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .main-content {
+                padding: 16px;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .upload-zone {
+                padding: 32px 16px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .nav-tabs {
+                padding: 0 12px;
+            }
+
+            .nav-tab {
+                padding: 12px 16px;
+                font-size: 13px;
+            }
+
+            table {
+                font-size: 12px;
+            }
+
+            th, td {
+                padding: 10px 8px;
+            }
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border);
+            border-top-color: var(--highlight);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Filter Section */
+        .filter-bar {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+
+        .filter-group {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .filter-group label {
+            display: block;
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+
+        .filter-group input, .filter-group select {
+            width: 100%;
+            padding: 10px 12px;
+            background: var(--surface-light);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text);
+            font-family: inherit;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div class="login-screen" id="loginScreen">
+        <div class="login-container">
+            <div class="login-logo">
+                <h1>📦 CEDI SECO</h1>
+                <p>Sistema de Recepción de Mercancía</p>
+            </div>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label>Recibidor</label>
+                    <select id="loginUser" required>
+                        <option value="">Seleccionar usuario...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Clave de acceso</label>
+                    <input type="password" id="loginPassword" placeholder="••••••" required>
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    Ingresar al Sistema
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div class="app-container" id="appContainer">
+        <header class="app-header">
+            <div class="header-left">
+                <span class="header-logo">📦 CEDI SECO</span>
+                <div class="header-user">
+                    <span>Recibidor:</span>
+                    <strong id="currentUserName">-</strong>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-secondary" onclick="logout()">
+                    Cerrar Sesión
+                </button>
+            </div>
+        </header>
+
+        <nav class="nav-tabs">
+            <button class="nav-tab active" data-tab="recepcion">📥 Nueva Recepción</button>
+            <button class="nav-tab" data-tab="historial">📋 Historial</button>
+            <button class="nav-tab" data-tab="admin">⚙️ Administración</button>
+        </nav>
+
+        <main class="main-content">
+            <!-- Tab: Nueva Recepción -->
+            <div class="tab-content active" id="tab-recepcion">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <span class="icon">📄</span>
+                            Cargar Orden de Compra
+                        </h3>
+                        <button class="btn btn-secondary" onclick="openManualEntryModal()">
+                            ✏️ Entrada Manual
+                        </button>
+                    </div>
+                    <div class="upload-zone" id="uploadZone">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <h3>Arrastra el PDF aquí</h3>
+                        <p>o haz clic para seleccionar archivo</p>
+                        <input type="file" id="pdfInput" accept=".pdf" style="display: none;">
+                    </div>
+                    <p style="text-align: center; margin-top: 12px; color: var(--text-muted); font-size: 13px;">
+                        💡 Si el PDF no se lee correctamente, use el botón "Entrada Manual"
+                    </p>
+                </div>
+
+                <div class="card hidden" id="pdfDataCard">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <span class="icon">📊</span>
+                            Datos de la Orden de Compra
+                        </h3>
+                        <span id="orderNumber" style="font-family: 'JetBrains Mono'; color: var(--highlight);">-</span>
+                    </div>
+                    <div class="pdf-data-grid" id="pdfDataGrid">
+                        <!-- Data items will be inserted here -->
+                    </div>
+                </div>
+
+                <div class="card hidden" id="receptionFormCard">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <span class="icon">📝</span>
+                            Registro de Recepción
+                        </h3>
+                    </div>
+                    <form id="receptionForm" class="reception-form">
+                        <div class="form-group" style="grid-column: 1 / -1;">
+                            <label>Planta de Destino</label>
+                            <div class="plant-selector" id="plantSelector">
+                                <div class="plant-option" data-plant="Derivados">
+                                    <span class="plant-icon">🏭</span>
+                                    <span class="plant-name">Derivados</span>
+                                </div>
+                                <div class="plant-option" data-plant="Crudos">
+                                    <span class="plant-icon">🥩</span>
+                                    <span class="plant-name">Crudos</span>
+                                </div>
+                                <div class="plant-option" data-plant="Apanados">
+                                    <span class="plant-icon">🍗</span>
+                                    <span class="plant-name">Apanados</span>
+                                </div>
+                                <div class="plant-option" data-plant="Pinkes">
+                                    <span class="plant-icon">🌭</span>
+                                    <span class="plant-name">Pinkes</span>
+                                </div>
+                            </div>
+                            <input type="hidden" id="plantaDestino" required>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Hora Inicio</label>
+                                <input type="time" id="horaInicio" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Hora Final</label>
+                                <input type="time" id="horaFinal" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Lote</label>
+                                <input type="text" id="lote" placeholder="Ej: L240125" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Fecha Vencimiento</label>
+                                <input type="date" id="vencimiento" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Color de Corbata (Identificación de Lote)</label>
+                            <div class="color-selector" id="colorSelector">
+                                <div class="color-option" data-color="Rojo" style="background: #e74c3c;" title="Rojo"></div>
+                                <div class="color-option" data-color="Azul" style="background: #3498db;" title="Azul"></div>
+                                <div class="color-option" data-color="Amarillo" style="background: #f1c40f;" title="Amarillo"></div>
+                                <div class="color-option" data-color="Verde" style="background: #2ecc71;" title="Verde"></div>
+                                <div class="color-option" data-color="Naranja" style="background: #e67e22;" title="Naranja"></div>
+                                <div class="color-option" data-color="Morado" style="background: #9b59b6;" title="Morado"></div>
+                                <div class="color-option" data-color="Rosa" style="background: #e91e63;" title="Rosa"></div>
+                                <div class="color-option" data-color="Café" style="background: #795548;" title="Café"></div>
+                                <div class="color-option" data-color="Negro" style="background: #2c3e50;" title="Negro"></div>
+                                <div class="color-option" data-color="Blanco" style="background: #ecf0f1; border: 1px solid #bdc3c7;" title="Blanco"></div>
+                            </div>
+                            <input type="hidden" id="colorCorbata" required>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label># Canastas</label>
+                                <input type="number" id="numCanastas" min="0" placeholder="0" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Peso por Canasta (kg)</label>
+                                <input type="number" id="pesoCanasta" step="0.01" value="2.5" placeholder="2.5">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Peso Bruto Recibido (kg)</label>
+                            <input type="number" id="pesoBruto" step="0.01" min="0" placeholder="0.00" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Observaciones</label>
+                            <input type="text" id="observaciones" placeholder="Notas adicionales...">
+                        </div>
+                    </form>
+
+                    <div class="calculations-grid" id="calculationsGrid">
+                        <div class="calc-item">
+                            <label>Peso Canastas</label>
+                            <div class="value" id="calcPesoCanastas">0.00 kg</div>
+                        </div>
+                        <div class="calc-item">
+                            <label>Peso Neto Recibido</label>
+                            <div class="value" id="calcPesoNeto">0.00 kg</div>
+                        </div>
+                        <div class="calc-item">
+                            <label>Total Facturado</label>
+                            <div class="value" id="calcFacturado">0.00 kg</div>
+                        </div>
+                        <div class="calc-item" id="mermaContainer">
+                            <label>Merma</label>
+                            <div class="value" id="calcMerma">0.00 kg</div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 24px; display: flex; gap: 12px; justify-content: flex-end;">
+                        <button type="button" class="btn btn-secondary" onclick="resetForm()">Cancelar</button>
+                        <button type="button" class="btn btn-success" onclick="saveReception()">
+                            💾 Guardar Recepción
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Historial -->
+            <div class="tab-content" id="tab-historial">
+                <div class="stats-grid" id="statsGrid">
+                    <div class="stat-card">
+                        <h4>Recepciones Hoy</h4>
+                        <div class="value" id="statToday">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Total Mes</h4>
+                        <div class="value" id="statMonth">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Kg Recibidos Hoy</h4>
+                        <div class="value" id="statKgToday">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Merma Promedio</h4>
+                        <div class="value" id="statMerma">0%</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <span class="icon">📋</span>
+                            Historial de Recepciones
+                        </h3>
+                        <button class="btn btn-success" onclick="exportToExcel()">
+                            📊 Exportar Excel
+                        </button>
+                    </div>
+
+                    <div class="filter-bar">
+                        <div class="filter-group">
+                            <label>Desde</label>
+                            <input type="date" id="filterDateFrom">
+                        </div>
+                        <div class="filter-group">
+                            <label>Hasta</label>
+                            <input type="date" id="filterDateTo">
+                        </div>
+                        <div class="filter-group">
+                            <label>Planta</label>
+                            <select id="filterPlanta">
+                                <option value="">Todas</option>
+                                <option value="Derivados">🏭 Derivados</option>
+                                <option value="Crudos">🥩 Crudos</option>
+                                <option value="Apanados">🍗 Apanados</option>
+                                <option value="Pinkes">🌭 Pinkes</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label>Proveedor</label>
+                            <input type="text" id="filterProveedor" placeholder="Buscar...">
+                        </div>
+                        <div class="filter-group">
+                            <label>Recibidor</label>
+                            <select id="filterRecibidor">
+                                <option value="">Todos</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-secondary" onclick="applyFilters()">Filtrar</button>
+                    </div>
+
+                    <div class="table-container">
+                        <table id="historyTable">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Planta</th>
+                                    <th>Orden</th>
+                                    <th>Proveedor</th>
+                                    <th>Producto</th>
+                                    <th>Lote</th>
+                                    <th>Corbata</th>
+                                    <th>Facturado</th>
+                                    <th>Recibido</th>
+                                    <th>Merma</th>
+                                    <th>Recibidor</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyBody">
+                                <!-- Data will be inserted here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Administración -->
+            <div class="tab-content" id="tab-admin">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <span class="icon">👥</span>
+                            Gestión de Recibidores
+                        </h3>
+                        <button class="btn btn-primary" onclick="openUserModal()">
+                            + Nuevo Recibidor
+                        </button>
+                    </div>
+                    <div class="users-list" id="usersList">
+                        <!-- Users will be inserted here -->
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <span class="icon">🔧</span>
+                            Configuración
+                        </h3>
+                    </div>
+                    <div class="form-group">
+                        <label>Peso estándar de canasta (kg)</label>
+                        <input type="number" id="configPesoCanasta" step="0.1" value="2.5">
+                    </div>
+                    <button class="btn btn-primary" onclick="saveConfig()" style="margin-top: 16px;">
+                        Guardar Configuración
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal: Nuevo Usuario -->
+    <div class="modal-overlay" id="userModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="userModalTitle">Nuevo Recibidor</h3>
+                <button class="modal-close" onclick="closeUserModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="userForm">
+                    <div class="form-group">
+                        <label>Nombre completo</label>
+                        <input type="text" id="userName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Clave de acceso</label>
+                        <input type="password" id="userPassword" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Rol</label>
+                        <select id="userRole">
+                            <option value="recibidor">Recibidor</option>
+                            <option value="admin">Administrador</option>
+                        </select>
+                    </div>
+                    <input type="hidden" id="editUserId">
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeUserModal()">Cancelar</button>
+                <button class="btn btn-primary" onclick="saveUser()">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Entrada Manual de Datos -->
+    <div class="modal-overlay" id="manualEntryModal">
+        <div class="modal" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3>📝 Entrada Manual de Orden</h3>
+                <button class="modal-close" onclick="closeManualEntryModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="color: var(--text-muted); margin-bottom: 20px;">No se pudo leer el PDF automáticamente. Ingrese los datos manualmente:</p>
+                <form id="manualEntryForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>No. Orden</label>
+                            <input type="text" id="manualOrderNumber" placeholder="Ej: 1656">
+                        </div>
+                        <div class="form-group">
+                            <label>Fecha Entrega</label>
+                            <input type="date" id="manualFechaEntrega">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Proveedor *</label>
+                        <input type="text" id="manualProveedor" placeholder="Ej: CARNICOS Y ALIMENTOS S.A.S." required>
+                    </div>
+                    <div class="form-group">
+                        <label>Producto *</label>
+                        <input type="text" id="manualProducto" placeholder="Ej: MP-POLLO COCO REFRI SIN MARINAR" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Cantidad Facturada (kg) *</label>
+                            <input type="number" id="manualCantidad" step="0.01" placeholder="Ej: 1036.20" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Precio Unitario</label>
+                            <input type="number" id="manualPrecioUnit" step="0.01" placeholder="Ej: 9500">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Total Facturado ($)</label>
+                        <input type="number" id="manualTotal" step="0.01" placeholder="Ej: 9325800">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeManualEntryModal()">Cancelar</button>
+                <button class="btn btn-primary" onclick="saveManualEntry()">Continuar con Recepción</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        // Firebase Configuration - Replace with your actual config
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT.firebaseapp.com",
+            databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
+            projectId: "YOUR_PROJECT",
+            storageBucket: "YOUR_PROJECT.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        // App State
+        let currentUser = null;
+        let pdfData = null;
+        let users = [];
+        let receptions = [];
+        let config = {
+            pesoCanasta: 2.5
+        };
+
+        // Initialize PDF.js
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        // DOM Elements
+        const loginScreen = document.getElementById('loginScreen');
+        const appContainer = document.getElementById('appContainer');
+        const uploadZone = document.getElementById('uploadZone');
+        const pdfInput = document.getElementById('pdfInput');
+
+        // Initialize App
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeApp();
+            setupEventListeners();
+        });
+
+        function initializeApp() {
+            // Load data from localStorage (simulating Firebase)
+            loadFromStorage();
+            
+            // Check if user is logged in
+            const savedUser = localStorage.getItem('currentUser');
+            if (savedUser) {
+                currentUser = JSON.parse(savedUser);
+                showApp();
+            }
+            
+            // Populate login users
+            populateLoginUsers();
+            
+            // Set default dates for filters
+            const today = new Date();
+            const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+            document.getElementById('filterDateFrom').value = firstDay.toISOString().split('T')[0];
+            document.getElementById('filterDateTo').value = today.toISOString().split('T')[0];
+        }
+
+        function loadFromStorage() {
+            // Load users
+            const savedUsers = localStorage.getItem('cedi_users');
+            if (savedUsers) {
+                users = JSON.parse(savedUsers);
+            } else {
+                // Create default admin user
+                users = [{
+                    id: 'admin_1',
+                    name: 'Administrador',
+                    password: '1234',
+                    role: 'admin'
+                }];
+                saveToStorage('cedi_users', users);
+            }
+            
+            // Load receptions
+            const savedReceptions = localStorage.getItem('cedi_receptions');
+            if (savedReceptions) {
+                receptions = JSON.parse(savedReceptions);
+            }
+            
+            // Load config
+            const savedConfig = localStorage.getItem('cedi_config');
+            if (savedConfig) {
+                config = JSON.parse(savedConfig);
+            }
+        }
+
+        function saveToStorage(key, data) {
+            localStorage.setItem(key, JSON.stringify(data));
+            // Here you would sync with Firebase
+            // firebase.database().ref(key).set(data);
+        }
+
+        function populateLoginUsers() {
+            const select = document.getElementById('loginUser');
+            select.innerHTML = '<option value="">Seleccionar usuario...</option>';
+            users.forEach(user => {
+                select.innerHTML += `<option value="${user.id}">${user.name}</option>`;
+            });
+        }
+
+        function setupEventListeners() {
+            // Login form
+            document.getElementById('loginForm').addEventListener('submit', handleLogin);
+            
+            // Tab navigation
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+            });
+            
+            // Upload zone
+            uploadZone.addEventListener('click', () => pdfInput.click());
+            uploadZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadZone.classList.add('dragover');
+            });
+            uploadZone.addEventListener('dragleave', () => {
+                uploadZone.classList.remove('dragover');
+            });
+            uploadZone.addEventListener('drop', handleFileDrop);
+            pdfInput.addEventListener('change', handleFileSelect);
+            
+            // Color selector
+            document.querySelectorAll('.color-option').forEach(option => {
+                option.addEventListener('click', () => selectColor(option));
+            });
+
+            // Plant selector
+            document.querySelectorAll('.plant-option').forEach(option => {
+                option.addEventListener('click', () => selectPlant(option));
+            });
+            
+            // Calculation inputs
+            ['numCanastas', 'pesoCanasta', 'pesoBruto'].forEach(id => {
+                document.getElementById(id).addEventListener('input', calculateTotals);
+            });
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const userId = document.getElementById('loginUser').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            const user = users.find(u => u.id === userId);
+            if (user && user.password === password) {
+                currentUser = user;
+                localStorage.setItem('currentUser', JSON.stringify(user));
+                showApp();
+                showToast('Bienvenido, ' + user.name, 'success');
+            } else {
+                showToast('Credenciales incorrectas', 'error');
+            }
+        }
+
+        function logout() {
+            currentUser = null;
+            localStorage.removeItem('currentUser');
+            loginScreen.style.display = 'flex';
+            appContainer.style.display = 'none';
+            document.getElementById('loginPassword').value = '';
+        }
+
+        function showApp() {
+            loginScreen.style.display = 'none';
+            appContainer.style.display = 'block';
+            document.getElementById('currentUserName').textContent = currentUser.name;
+            
+            // Show/hide admin tab based on role
+            const adminTab = document.querySelector('[data-tab="admin"]');
+            if (currentUser.role !== 'admin') {
+                adminTab.style.display = 'none';
+            } else {
+                adminTab.style.display = 'block';
+            }
+            
+            refreshHistory();
+            renderUsersList();
+            populateFilterRecibidor();
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+            
+            if (tabId === 'historial') {
+                refreshHistory();
+            }
+        }
+
+        function handleFileDrop(e) {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file && file.type === 'application/pdf') {
+                processPDF(file);
+            } else {
+                showToast('Por favor, sube un archivo PDF', 'error');
+            }
+        }
+
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (file) {
+                processPDF(file);
+            }
+        }
+
+        async function processPDF(file) {
+            try {
+                showToast('Procesando PDF...', 'success');
+                
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+                const page = await pdf.getPage(1);
+                const textContent = await page.getTextContent();
+                
+                // Build text preserving some structure
+                let textParts = [];
+                let lastY = null;
+                
+                textContent.items.forEach(item => {
+                    // If Y position changed significantly, add line break marker
+                    if (lastY !== null && Math.abs(item.transform[5] - lastY) > 5) {
+                        textParts.push(' | ');
+                    }
+                    textParts.push(item.str);
+                    lastY = item.transform[5];
+                });
+                
+                let text = textParts.join(' ');
+                console.log('Extracted PDF text:', text);
+                
+                // Extract data from PDF
+                pdfData = extractPDFData(text);
+                
+                // If basic data was extracted, show it
+                if (pdfData.orderNumber || pdfData.proveedor || pdfData.cantidad > 0) {
+                    displayPDFData();
+                    showToast('PDF procesado correctamente', 'success');
+                } else {
+                    // Offer manual entry
+                    showToast('No se pudo leer automáticamente. Ingrese datos manualmente.', 'error');
+                    openManualEntryModal();
+                }
+            } catch (error) {
+                console.error('Error processing PDF:', error);
+                showToast('Error al procesar PDF. Use entrada manual.', 'error');
+                openManualEntryModal();
+            }
+        }
+        
+        function openManualEntryModal() {
+            // Set default empty pdfData
+            pdfData = {
+                orderNumber: '',
+                proveedor: '',
+                producto: '',
+                cantidad: 0,
+                precioUnit: 0,
+                total: 0,
+                fechaSolicitud: '',
+                fechaEntrega: '',
+                unidad: 'KG'
+            };
+            
+            document.getElementById('manualEntryModal').classList.add('active');
+        }
+        
+        function closeManualEntryModal() {
+            document.getElementById('manualEntryModal').classList.remove('active');
+        }
+        
+        function saveManualEntry() {
+            pdfData = {
+                orderNumber: document.getElementById('manualOrderNumber').value || 'MANUAL',
+                proveedor: document.getElementById('manualProveedor').value,
+                producto: document.getElementById('manualProducto').value,
+                cantidad: parseFloat(document.getElementById('manualCantidad').value) || 0,
+                precioUnit: parseFloat(document.getElementById('manualPrecioUnit').value) || 0,
+                total: parseFloat(document.getElementById('manualTotal').value) || 0,
+                fechaEntrega: document.getElementById('manualFechaEntrega').value,
+                unidad: 'KG'
+            };
+            
+            if (!pdfData.proveedor || !pdfData.producto || pdfData.cantidad === 0) {
+                showToast('Complete al menos proveedor, producto y cantidad', 'error');
+                return;
+            }
+            
+            closeManualEntryModal();
+            displayPDFData();
+            showToast('Datos guardados correctamente', 'success');
+        }
+
+        function extractPDFData(text) {
+            console.log('PDF Text extracted:', text); // Debug
+            
+            // Normalize text - remove extra spaces
+            const normalizedText = text.replace(/\s+/g, ' ').trim();
+            
+            // Extract order number - look for "No. XXXX" pattern
+            let orderNumber = '';
+            const orderPatterns = [
+                /No\.\s*(\d{4,})/i,
+                /ORDEN DE COMPRA\s*No\.\s*(\d+)/i,
+                /No\.\s+(\d+)/i
+            ];
+            for (const pattern of orderPatterns) {
+                const match = normalizedText.match(pattern);
+                if (match) {
+                    orderNumber = match[1];
+                    break;
+                }
+            }
+            
+            // Extract provider - look for "Proveedor:" followed by company name
+            let proveedor = '';
+            const provPatterns = [
+                /Proveedor:\s*([A-Z][A-Z\s\.\,]+(?:S\.A\.S\.?|S\.A\.?|LTDA\.?|SAS))/i,
+                /Proveedor:\s*([^\n]+?)(?:\s*No\.\s*Documento|\s*Dir\.)/i,
+                /Proveedor:\s*(.+?)(?=\s+No\.\s+Documento|\s+Dir\.)/i
+            ];
+            for (const pattern of provPatterns) {
+                const match = normalizedText.match(pattern);
+                if (match) {
+                    proveedor = match[1].trim();
+                    break;
+                }
+            }
+            
+            // Extract product description - look for item code followed by description
+            let producto = '';
+            const prodPatterns = [
+                /(\d{6})\s+(MP-[A-Z\-\s]+?)(?=\s+KG|\s+UN|\s+LB)/i,
+                /(\d{6})\s+([A-Z][A-Z\-\s]+?)(?=\s+KG|\s+UN|\s+LB)/i,
+                /DESCRIPCION\s+.*?(\d{6})\s+([A-Z\-\s]+?)(?=\s+FECHA|\s+KG)/i
+            ];
+            for (const pattern of prodPatterns) {
+                const match = normalizedText.match(pattern);
+                if (match) {
+                    producto = match[2].trim();
+                    break;
+                }
+            }
+            
+            // Extract quantity - look for pattern after KG: number with decimals
+            let cantidad = 0;
+            const cantPatterns = [
+                /KG\s+([\d\.,]+)\s+([\d\.,]+)\s+\d+%/i,  // KG CANTIDAD VR.UNIT %DTO
+                /CANTIDAD\s+.*?KG\s+([\d\.,]+)/i,
+                /KG\s+([\d]{1,3}(?:[,.]?\d{3})*(?:[,.]\d{1,2})?)\s/i
+            ];
+            for (const pattern of cantPatterns) {
+                const match = normalizedText.match(pattern);
+                if (match) {
+                    // Handle both 1,036.20 and 1.036,20 formats
+                    let numStr = match[1];
+                    // If has comma followed by 3 digits and dot, it's 1,036.20 format
+                    if (/,\d{3}\./.test(numStr)) {
+                        cantidad = parseFloat(numStr.replace(/,/g, ''));
+                    } else if (/\.\d{3},/.test(numStr)) {
+                        // European format: 1.036,20
+                        cantidad = parseFloat(numStr.replace(/\./g, '').replace(',', '.'));
+                    } else {
+                        // Simple format
+                        cantidad = parseFloat(numStr.replace(',', '.'));
+                    }
+                    break;
+                }
+            }
+            
+            // Extract unit price
+            let precioUnit = 0;
+            const unitPatterns = [
+                /KG\s+[\d\.,]+\s+([\d\.,]+)\s+\d+%/i,  // After cantidad
+                /VR\.\s*UNIT\.?\s*([\d\.,]+)/i
+            ];
+            for (const pattern of unitPatterns) {
+                const match = normalizedText.match(pattern);
+                if (match) {
+                    precioUnit = parseFloat(match[1].replace(/[,\.]/g, (m, i, s) => {
+                        // Keep last separator as decimal
+                        const lastComma = s.lastIndexOf(',');
+                        const lastDot = s.lastIndexOf('.');
+                        const lastSep = Math.max(lastComma, lastDot);
+                        return i === lastSep ? '.' : '';
+                    }));
+                    if (isNaN(precioUnit)) {
+                        precioUnit = parseFloat(match[1].replace(/,/g, ''));
+                    }
+                    break;
+                }
+            }
+            
+            // Extract total - look for VR. TOTAL or large number at end
+            let total = 0;
+            const totalPatterns = [
+                /VR\.\s*TOTAL\s*([\d\.,]+)/i,
+                /TOTAL\s*([\d]{1,3}(?:[,.]?\d{3})+)/i,
+                /([\d]{1,3}(?:,\d{3}){2,})\s*$/  // Large number at end like 9,325,800
+            ];
+            for (const pattern of totalPatterns) {
+                const match = normalizedText.match(pattern);
+                if (match) {
+                    total = parseFloat(match[1].replace(/,/g, ''));
+                    break;
+                }
+            }
+            
+            // Extract dates
+            let fechaSolicitud = '';
+            let fechaEntrega = '';
+            
+            const fechaSolMatch = normalizedText.match(/Fecha\s*Solicitud:?\s*(\d{2}-\d{2}-\d{4})/i);
+            if (fechaSolMatch) fechaSolicitud = fechaSolMatch[1];
+            
+            const fechaEntMatch = normalizedText.match(/Fecha\s*Entrega:?\s*(\d{2}-\d{2}-\d{4})/i);
+            if (fechaEntMatch) fechaEntrega = fechaEntMatch[1];
+            
+            const result = {
+                orderNumber,
+                proveedor,
+                producto,
+                cantidad,
+                precioUnit,
+                total,
+                fechaSolicitud,
+                fechaEntrega,
+                unidad: 'KG'
+            };
+            
+            console.log('Extracted data:', result); // Debug
+            return result;
+        }
+
+        function displayPDFData() {
+            document.getElementById('pdfDataCard').classList.remove('hidden');
+            document.getElementById('receptionFormCard').classList.remove('hidden');
+            document.getElementById('orderNumber').textContent = `Orden #${pdfData.orderNumber}`;
+            
+            const grid = document.getElementById('pdfDataGrid');
+            grid.innerHTML = `
+                <div class="data-item">
+                    <label>Proveedor</label>
+                    <div class="value">${pdfData.proveedor || '-'}</div>
+                </div>
+                <div class="data-item">
+                    <label>Producto</label>
+                    <div class="value">${pdfData.producto || '-'}</div>
+                </div>
+                <div class="data-item highlight">
+                    <label>Cantidad Facturada</label>
+                    <div class="value">${pdfData.cantidad.toLocaleString('es-CO')} ${pdfData.unidad}</div>
+                </div>
+                <div class="data-item">
+                    <label>Precio Unitario</label>
+                    <div class="value">$${pdfData.precioUnit.toLocaleString('es-CO')}</div>
+                </div>
+                <div class="data-item highlight">
+                    <label>Total Facturado</label>
+                    <div class="value">$${pdfData.total.toLocaleString('es-CO')}</div>
+                </div>
+                <div class="data-item">
+                    <label>Fecha Entrega</label>
+                    <div class="value">${pdfData.fechaEntrega || '-'}</div>
+                </div>
+            `;
+            
+            // Set default values
+            document.getElementById('pesoCanasta').value = config.pesoCanasta;
+            document.getElementById('calcFacturado').textContent = `${pdfData.cantidad.toLocaleString('es-CO')} kg`;
+            
+            // Set current time as start time
+            const now = new Date();
+            document.getElementById('horaInicio').value = now.toTimeString().slice(0, 5);
+        }
+
+        function selectColor(option) {
+            document.querySelectorAll('.color-option').forEach(o => o.classList.remove('selected'));
+            option.classList.add('selected');
+            document.getElementById('colorCorbata').value = option.dataset.color;
+        }
+
+        function selectPlant(option) {
+            document.querySelectorAll('.plant-option').forEach(o => o.classList.remove('selected'));
+            option.classList.add('selected');
+            document.getElementById('plantaDestino').value = option.dataset.plant;
+        }
+
+        function calculateTotals() {
+            const numCanastas = parseFloat(document.getElementById('numCanastas').value) || 0;
+            const pesoCanasta = parseFloat(document.getElementById('pesoCanasta').value) || 0;
+            const pesoBruto = parseFloat(document.getElementById('pesoBruto').value) || 0;
+            
+            const pesoCanastas = numCanastas * pesoCanasta;
+            const pesoNeto = pesoBruto - pesoCanastas;
+            const facturado = pdfData ? pdfData.cantidad : 0;
+            const merma = facturado - pesoNeto;
+            const mermaPercent = facturado > 0 ? (merma / facturado * 100) : 0;
+            
+            document.getElementById('calcPesoCanastas').textContent = `${pesoCanastas.toFixed(2)} kg`;
+            document.getElementById('calcPesoNeto').textContent = `${pesoNeto.toFixed(2)} kg`;
+            document.getElementById('calcFacturado').textContent = `${facturado.toLocaleString('es-CO')} kg`;
+            
+            const mermaContainer = document.getElementById('mermaContainer');
+            const mermaDisplay = document.getElementById('calcMerma');
+            
+            if (merma > 0) {
+                mermaContainer.classList.remove('positive');
+                mermaContainer.classList.add('negative');
+                mermaDisplay.textContent = `-${merma.toFixed(2)} kg (${mermaPercent.toFixed(1)}%)`;
+            } else if (merma < 0) {
+                mermaContainer.classList.remove('negative');
+                mermaContainer.classList.add('positive');
+                mermaDisplay.textContent = `+${Math.abs(merma).toFixed(2)} kg (${Math.abs(mermaPercent).toFixed(1)}%)`;
+            } else {
+                mermaContainer.classList.remove('positive', 'negative');
+                mermaDisplay.textContent = `0.00 kg (0%)`;
+            }
+        }
+
+        function saveReception() {
+            // Validate form
+            const form = document.getElementById('receptionForm');
+            if (!form.checkValidity()) {
+                showToast('Por favor complete todos los campos requeridos', 'error');
+                return;
+            }
+            
+            if (!document.getElementById('plantaDestino').value) {
+                showToast('Por favor seleccione una planta de destino', 'error');
+                return;
+            }
+            
+            if (!document.getElementById('colorCorbata').value) {
+                showToast('Por favor seleccione un color de corbata', 'error');
+                return;
+            }
+            
+            const numCanastas = parseFloat(document.getElementById('numCanastas').value) || 0;
+            const pesoCanasta = parseFloat(document.getElementById('pesoCanasta').value) || 0;
+            const pesoBruto = parseFloat(document.getElementById('pesoBruto').value) || 0;
+            const pesoNeto = pesoBruto - (numCanastas * pesoCanasta);
+            const merma = pdfData.cantidad - pesoNeto;
+            
+            const reception = {
+                id: 'rec_' + Date.now(),
+                fecha: new Date().toISOString(),
+                plantaDestino: document.getElementById('plantaDestino').value,
+                orderNumber: pdfData.orderNumber,
+                proveedor: pdfData.proveedor,
+                producto: pdfData.producto,
+                cantidadFacturada: pdfData.cantidad,
+                totalFacturado: pdfData.total,
+                horaInicio: document.getElementById('horaInicio').value,
+                horaFinal: document.getElementById('horaFinal').value,
+                lote: document.getElementById('lote').value,
+                vencimiento: document.getElementById('vencimiento').value,
+                colorCorbata: document.getElementById('colorCorbata').value,
+                numCanastas: numCanastas,
+                pesoCanasta: pesoCanasta,
+                pesoBruto: pesoBruto,
+                pesoNeto: pesoNeto,
+                merma: merma,
+                mermaPercent: (merma / pdfData.cantidad * 100),
+                observaciones: document.getElementById('observaciones').value,
+                recibidor: currentUser.name,
+                recibidorId: currentUser.id
+            };
+            
+            receptions.unshift(reception);
+            saveToStorage('cedi_receptions', receptions);
+            
+            showToast('Recepción guardada correctamente', 'success');
+            resetForm();
+            switchTab('historial');
+        }
+
+        function resetForm() {
+            pdfData = null;
+            document.getElementById('pdfDataCard').classList.add('hidden');
+            document.getElementById('receptionFormCard').classList.add('hidden');
+            document.getElementById('receptionForm').reset();
+            document.getElementById('pdfInput').value = '';
+            document.querySelectorAll('.color-option').forEach(o => o.classList.remove('selected'));
+            document.querySelectorAll('.plant-option').forEach(o => o.classList.remove('selected'));
+            document.getElementById('colorCorbata').value = '';
+            document.getElementById('plantaDestino').value = '';
+        }
+
+        function refreshHistory() {
+            updateStats();
+            renderHistory(receptions);
+        }
+
+        function updateStats() {
+            const today = new Date().toISOString().split('T')[0];
+            const thisMonth = new Date().toISOString().slice(0, 7);
+            
+            const todayReceptions = receptions.filter(r => r.fecha.startsWith(today));
+            const monthReceptions = receptions.filter(r => r.fecha.startsWith(thisMonth));
+            
+            const kgToday = todayReceptions.reduce((sum, r) => sum + r.pesoNeto, 0);
+            const avgMerma = receptions.length > 0 
+                ? receptions.reduce((sum, r) => sum + r.mermaPercent, 0) / receptions.length 
+                : 0;
+            
+            document.getElementById('statToday').textContent = todayReceptions.length;
+            document.getElementById('statMonth').textContent = monthReceptions.length;
+            document.getElementById('statKgToday').textContent = kgToday.toFixed(0);
+            document.getElementById('statMerma').textContent = avgMerma.toFixed(1) + '%';
+        }
+
+        function renderHistory(data) {
+            const tbody = document.getElementById('historyBody');
+            
+            if (data.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="11" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                            No hay recepciones registradas
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = data.map(r => {
+                const fecha = new Date(r.fecha);
+                const colorStyle = getColorStyle(r.colorCorbata);
+                const mermaClass = r.merma > 0 ? 'merma-negative' : 'merma-positive';
+                const plantIcon = getPlantIcon(r.plantaDestino);
+                
+                return `
+                    <tr>
+                        <td>${fecha.toLocaleDateString('es-CO')}</td>
+                        <td>${plantIcon} ${r.plantaDestino || '-'}</td>
+                        <td>#${r.orderNumber}</td>
+                        <td>${r.proveedor}</td>
+                        <td>${r.producto}</td>
+                        <td>${r.lote}</td>
+                        <td><span class="color-badge" style="${colorStyle}" title="${r.colorCorbata}"></span></td>
+                        <td>${r.cantidadFacturada.toLocaleString('es-CO')} kg</td>
+                        <td>${r.pesoNeto.toFixed(2)} kg</td>
+                        <td class="${mermaClass}">${r.merma > 0 ? '-' : '+'}${Math.abs(r.merma).toFixed(2)} kg</td>
+                        <td>${r.recibidor}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function getPlantIcon(plant) {
+            const icons = {
+                'Derivados': '🏭',
+                'Crudos': '🥩',
+                'Apanados': '🍗',
+                'Pinkes': '🌭'
+            };
+            return icons[plant] || '📦';
+        }
+
+        function getColorStyle(colorName) {
+            const colors = {
+                'Rojo': '#e74c3c',
+                'Azul': '#3498db',
+                'Amarillo': '#f1c40f',
+                'Verde': '#2ecc71',
+                'Naranja': '#e67e22',
+                'Morado': '#9b59b6',
+                'Rosa': '#e91e63',
+                'Café': '#795548',
+                'Negro': '#2c3e50',
+                'Blanco': '#ecf0f1'
+            };
+            return `background: ${colors[colorName] || '#888'}`;
+        }
+
+        function applyFilters() {
+            const dateFrom = document.getElementById('filterDateFrom').value;
+            const dateTo = document.getElementById('filterDateTo').value;
+            const planta = document.getElementById('filterPlanta').value;
+            const proveedor = document.getElementById('filterProveedor').value.toLowerCase();
+            const recibidorId = document.getElementById('filterRecibidor').value;
+            
+            let filtered = [...receptions];
+            
+            if (dateFrom) {
+                filtered = filtered.filter(r => r.fecha >= dateFrom);
+            }
+            if (dateTo) {
+                filtered = filtered.filter(r => r.fecha <= dateTo + 'T23:59:59');
+            }
+            if (planta) {
+                filtered = filtered.filter(r => r.plantaDestino === planta);
+            }
+            if (proveedor) {
+                filtered = filtered.filter(r => r.proveedor.toLowerCase().includes(proveedor));
+            }
+            if (recibidorId) {
+                filtered = filtered.filter(r => r.recibidorId === recibidorId);
+            }
+            
+            renderHistory(filtered);
+        }
+
+        function populateFilterRecibidor() {
+            const select = document.getElementById('filterRecibidor');
+            select.innerHTML = '<option value="">Todos</option>';
+            users.forEach(user => {
+                select.innerHTML += `<option value="${user.id}">${user.name}</option>`;
+            });
+        }
+
+        function exportToExcel() {
+            if (receptions.length === 0) {
+                showToast('No hay datos para exportar', 'error');
+                return;
+            }
+            
+            const data = receptions.map(r => ({
+                'Fecha': new Date(r.fecha).toLocaleDateString('es-CO'),
+                'Planta': r.plantaDestino || '',
+                'Hora Inicio': r.horaInicio,
+                'Hora Final': r.horaFinal,
+                'Orden': r.orderNumber,
+                'Proveedor': r.proveedor,
+                'Producto': r.producto,
+                'Lote': r.lote,
+                'Vencimiento': r.vencimiento,
+                'Color Corbata': r.colorCorbata,
+                '# Canastas': r.numCanastas,
+                'Peso Canasta': r.pesoCanasta,
+                'Peso Bruto': r.pesoBruto,
+                'Peso Neto': r.pesoNeto,
+                'Facturado (kg)': r.cantidadFacturada,
+                'Total Facturado ($)': r.totalFacturado,
+                'Merma (kg)': r.merma,
+                'Merma (%)': r.mermaPercent.toFixed(2),
+                'Recibidor': r.recibidor,
+                'Observaciones': r.observaciones
+            }));
+            
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Recepciones');
+            
+            // Set column widths
+            ws['!cols'] = [
+                {wch: 12}, {wch: 10}, {wch: 10}, {wch: 8}, {wch: 25}, 
+                {wch: 30}, {wch: 12}, {wch: 12}, {wch: 12}, {wch: 10},
+                {wch: 12}, {wch: 12}, {wch: 12}, {wch: 12}, {wch: 15},
+                {wch: 12}, {wch: 10}, {wch: 15}, {wch: 30}
+            ];
+            
+            const fileName = `Recepciones_CEDI_${new Date().toISOString().slice(0,10)}.xlsx`;
+            XLSX.writeFile(wb, fileName);
+            showToast('Excel exportado correctamente', 'success');
+        }
+
+        // User Management
+        function openUserModal(userId = null) {
+            const modal = document.getElementById('userModal');
+            const title = document.getElementById('userModalTitle');
+            
+            if (userId) {
+                const user = users.find(u => u.id === userId);
+                title.textContent = 'Editar Recibidor';
+                document.getElementById('userName').value = user.name;
+                document.getElementById('userPassword').value = user.password;
+                document.getElementById('userRole').value = user.role;
+                document.getElementById('editUserId').value = userId;
+            } else {
+                title.textContent = 'Nuevo Recibidor';
+                document.getElementById('userForm').reset();
+                document.getElementById('editUserId').value = '';
+            }
+            
+            modal.classList.add('active');
+        }
+
+        function closeUserModal() {
+            document.getElementById('userModal').classList.remove('active');
+        }
+
+        function saveUser() {
+            const name = document.getElementById('userName').value.trim();
+            const password = document.getElementById('userPassword').value;
+            const role = document.getElementById('userRole').value;
+            const editId = document.getElementById('editUserId').value;
+            
+            if (!name || !password) {
+                showToast('Complete todos los campos', 'error');
+                return;
+            }
+            
+            if (editId) {
+                // Edit existing user
+                const index = users.findIndex(u => u.id === editId);
+                if (index !== -1) {
+                    users[index] = { ...users[index], name, password, role };
+                }
+            } else {
+                // Create new user
+                const newUser = {
+                    id: 'user_' + Date.now(),
+                    name,
+                    password,
+                    role
+                };
+                users.push(newUser);
+            }
+            
+            saveToStorage('cedi_users', users);
+            populateLoginUsers();
+            populateFilterRecibidor();
+            renderUsersList();
+            closeUserModal();
+            showToast('Usuario guardado correctamente', 'success');
+        }
+
+        function deleteUser(userId) {
+            if (userId === currentUser.id) {
+                showToast('No puede eliminar su propio usuario', 'error');
+                return;
+            }
+            
+            if (confirm('¿Está seguro de eliminar este usuario?')) {
+                users = users.filter(u => u.id !== userId);
+                saveToStorage('cedi_users', users);
+                populateLoginUsers();
+                populateFilterRecibidor();
+                renderUsersList();
+                showToast('Usuario eliminado', 'success');
+            }
+        }
+
+        function renderUsersList() {
+            const container = document.getElementById('usersList');
+            container.innerHTML = users.map(user => `
+                <div class="user-item">
+                    <div class="user-info">
+                        <div class="user-avatar">${user.name.charAt(0).toUpperCase()}</div>
+                        <div>
+                            <strong>${user.name}</strong>
+                            <div style="font-size: 12px; color: var(--text-muted);">${user.role === 'admin' ? 'Administrador' : 'Recibidor'}</div>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn btn-secondary" onclick="openUserModal('${user.id}')" style="padding: 8px 12px;">
+                            ✏️
+                        </button>
+                        <button class="btn btn-secondary" onclick="deleteUser('${user.id}')" style="padding: 8px 12px;">
+                            🗑️
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function saveConfig() {
+            config.pesoCanasta = parseFloat(document.getElementById('configPesoCanasta').value) || 2.5;
+            saveToStorage('cedi_config', config);
+            showToast('Configuración guardada', 'success');
+        }
+
+        // Toast Notifications
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <span>${type === 'success' ? '✓' : '✕'}</span>
+                <span>${message}</span>
+            `;
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'slideIn 0.3s ease reverse';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
