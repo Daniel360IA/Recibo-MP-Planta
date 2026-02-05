@@ -505,6 +505,11 @@
             color: var(--danger);
         }
 
+        .calc-item.highlight-box {
+            background: rgba(0, 208, 156, 0.15);
+            border: 2px solid var(--success);
+        }
+
         /* History Table */
         .table-container {
             overflow-x: auto;
@@ -951,6 +956,27 @@
 
                         <div class="form-row">
                             <div class="form-group">
+                                <label>Fecha Factura</label>
+                                <input type="date" id="fechaFactura" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Cava de Almacenamiento</label>
+                                <select id="cavaAlmacenamiento" required>
+                                    <option value="">Seleccionar cava...</option>
+                                    <option value="Cava 1">Cava 1</option>
+                                    <option value="Cava 2">Cava 2</option>
+                                    <option value="Cava 3">Cava 3</option>
+                                    <option value="Cava 4">Cava 4</option>
+                                    <option value="Cava 5">Cava 5</option>
+                                    <option value="Cava Principal">Cava Principal</option>
+                                    <option value="Cava Congelados">Cava Congelados</option>
+                                    <option value="Cava Refrigerados">Cava Refrigerados</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
                                 <label>Lote</label>
                                 <input type="text" id="lote" placeholder="Ej: L240125" required>
                             </div>
@@ -988,9 +1014,15 @@
                             </div>
                         </div>
 
-                        <div class="form-group">
-                            <label>Peso Bruto Recibido (kg)</label>
-                            <input type="number" id="pesoBruto" step="0.01" min="0" placeholder="0.00" required>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Peso Bruto Recibido (kg)</label>
+                                <input type="number" id="pesoBruto" step="0.01" min="0" placeholder="0.00" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Descuento en Producto (%)</label>
+                                <input type="number" id="descuentoProducto" step="0.01" min="0" max="100" value="0" placeholder="0">
+                            </div>
                         </div>
 
                         <div class="form-group">
@@ -1009,12 +1041,27 @@
                             <div class="value" id="calcPesoNeto">0.00 kg</div>
                         </div>
                         <div class="calc-item">
-                            <label>Total Facturado</label>
+                            <label>Kg Facturados</label>
                             <div class="value" id="calcFacturado">0.00 kg</div>
                         </div>
                         <div class="calc-item" id="mermaContainer">
-                            <label>Merma</label>
+                            <label>Merma (kg)</label>
                             <div class="value" id="calcMerma">0.00 kg</div>
+                        </div>
+                    </div>
+
+                    <div class="calculations-grid" style="margin-top: 16px;">
+                        <div class="calc-item">
+                            <label>Descuento ($)</label>
+                            <div class="value" id="calcDescuento" style="font-size: 18px;">$0</div>
+                        </div>
+                        <div class="calc-item">
+                            <label>Valor Facturado</label>
+                            <div class="value" id="calcValorFacturado" style="font-size: 18px;">$0</div>
+                        </div>
+                        <div class="calc-item highlight-box">
+                            <label>💰 Valor Total a Pagar</label>
+                            <div class="value" id="calcValorTotal" style="color: var(--success);">$0</div>
                         </div>
                     </div>
 
@@ -1097,14 +1144,14 @@
                                 <tr>
                                     <th>Fecha</th>
                                     <th>Planta</th>
+                                    <th>Cava</th>
                                     <th>Orden</th>
                                     <th>Proveedor</th>
                                     <th>Producto</th>
-                                    <th>Lote</th>
                                     <th>Corbata</th>
-                                    <th>Facturado</th>
                                     <th>Recibido</th>
                                     <th>Merma</th>
+                                    <th>Valor Total</th>
                                     <th>Recibidor</th>
                                 </tr>
                             </thead>
@@ -1372,7 +1419,7 @@
             });
             
             // Calculation inputs
-            ['numCanastas', 'pesoCanasta', 'pesoBruto'].forEach(id => {
+            ['numCanastas', 'pesoCanasta', 'pesoBruto', 'descuentoProducto'].forEach(id => {
                 document.getElementById(id).addEventListener('input', calculateTotals);
             });
         }
@@ -1735,16 +1782,29 @@
             const numCanastas = parseFloat(document.getElementById('numCanastas').value) || 0;
             const pesoCanasta = parseFloat(document.getElementById('pesoCanasta').value) || 0;
             const pesoBruto = parseFloat(document.getElementById('pesoBruto').value) || 0;
+            const descuentoPct = parseFloat(document.getElementById('descuentoProducto').value) || 0;
             
             const pesoCanastas = numCanastas * pesoCanasta;
             const pesoNeto = pesoBruto - pesoCanastas;
             const facturado = pdfData ? pdfData.cantidad : 0;
+            const precioUnit = pdfData ? pdfData.precioUnit : 0;
+            const valorFacturado = pdfData ? pdfData.total : 0;
             const merma = facturado - pesoNeto;
             const mermaPercent = facturado > 0 ? (merma / facturado * 100) : 0;
+            
+            // Calcular valor basado en peso recibido
+            const valorPesoRecibido = pesoNeto * precioUnit;
+            const descuentoValor = valorPesoRecibido * (descuentoPct / 100);
+            const valorTotal = valorPesoRecibido - descuentoValor;
             
             document.getElementById('calcPesoCanastas').textContent = `${pesoCanastas.toFixed(2)} kg`;
             document.getElementById('calcPesoNeto').textContent = `${pesoNeto.toFixed(2)} kg`;
             document.getElementById('calcFacturado').textContent = `${facturado.toLocaleString('es-CO')} kg`;
+            
+            // Mostrar valores monetarios
+            document.getElementById('calcDescuento').textContent = `$${descuentoValor.toLocaleString('es-CO', {minimumFractionDigits: 0, maximumFractionDigits: 0})}`;
+            document.getElementById('calcValorFacturado').textContent = `$${valorFacturado.toLocaleString('es-CO', {minimumFractionDigits: 0, maximumFractionDigits: 0})}`;
+            document.getElementById('calcValorTotal').textContent = `$${valorTotal.toLocaleString('es-CO', {minimumFractionDigits: 0, maximumFractionDigits: 0})}`;
             
             const mermaContainer = document.getElementById('mermaContainer');
             const mermaDisplay = document.getElementById('calcMerma');
@@ -1784,8 +1844,13 @@
             const numCanastas = parseFloat(document.getElementById('numCanastas').value) || 0;
             const pesoCanasta = parseFloat(document.getElementById('pesoCanasta').value) || 0;
             const pesoBruto = parseFloat(document.getElementById('pesoBruto').value) || 0;
+            const descuentoPct = parseFloat(document.getElementById('descuentoProducto').value) || 0;
             const pesoNeto = pesoBruto - (numCanastas * pesoCanasta);
             const merma = pdfData.cantidad - pesoNeto;
+            const precioUnit = pdfData.precioUnit || 0;
+            const valorPesoRecibido = pesoNeto * precioUnit;
+            const descuentoValor = valorPesoRecibido * (descuentoPct / 100);
+            const valorTotal = valorPesoRecibido - descuentoValor;
             
             const reception = {
                 id: 'rec_' + Date.now(),
@@ -1796,8 +1861,11 @@
                 producto: pdfData.producto,
                 cantidadFacturada: pdfData.cantidad,
                 totalFacturado: pdfData.total,
+                precioUnitario: precioUnit,
                 horaInicio: document.getElementById('horaInicio').value,
                 horaFinal: document.getElementById('horaFinal').value,
+                fechaFactura: document.getElementById('fechaFactura').value,
+                cavaAlmacenamiento: document.getElementById('cavaAlmacenamiento').value,
                 lote: document.getElementById('lote').value,
                 vencimiento: document.getElementById('vencimiento').value,
                 colorCorbata: document.getElementById('colorCorbata').value,
@@ -1806,7 +1874,10 @@
                 pesoBruto: pesoBruto,
                 pesoNeto: pesoNeto,
                 merma: merma,
-                mermaPercent: (merma / pdfData.cantidad * 100),
+                mermaPercent: pdfData.cantidad > 0 ? (merma / pdfData.cantidad * 100) : 0,
+                descuentoPct: descuentoPct,
+                descuentoValor: descuentoValor,
+                valorTotal: valorTotal,
                 observaciones: document.getElementById('observaciones').value,
                 recibidor: currentUser.name,
                 recibidorId: currentUser.id
@@ -1874,19 +1945,20 @@
                 const colorStyle = getColorStyle(r.colorCorbata);
                 const mermaClass = r.merma > 0 ? 'merma-negative' : 'merma-positive';
                 const plantIcon = getPlantIcon(r.plantaDestino);
+                const valorTotal = r.valorTotal || 0;
                 
                 return `
                     <tr>
                         <td>${fecha.toLocaleDateString('es-CO')}</td>
                         <td>${plantIcon} ${r.plantaDestino || '-'}</td>
+                        <td>${r.cavaAlmacenamiento || '-'}</td>
                         <td>#${r.orderNumber}</td>
                         <td>${r.proveedor}</td>
                         <td>${r.producto}</td>
-                        <td>${r.lote}</td>
                         <td><span class="color-badge" style="${colorStyle}" title="${r.colorCorbata}"></span></td>
-                        <td>${r.cantidadFacturada.toLocaleString('es-CO')} kg</td>
                         <td>${r.pesoNeto.toFixed(2)} kg</td>
                         <td class="${mermaClass}">${r.merma > 0 ? '-' : '+'}${Math.abs(r.merma).toFixed(2)} kg</td>
+                        <td>$${valorTotal.toLocaleString('es-CO', {minimumFractionDigits: 0})}</td>
                         <td>${r.recibidor}</td>
                     </tr>
                 `;
@@ -1962,8 +2034,10 @@
             }
             
             const data = receptions.map(r => ({
-                'Fecha': new Date(r.fecha).toLocaleDateString('es-CO'),
+                'Fecha Recepción': new Date(r.fecha).toLocaleDateString('es-CO'),
+                'Fecha Factura': r.fechaFactura || '',
                 'Planta': r.plantaDestino || '',
+                'Cava': r.cavaAlmacenamiento || '',
                 'Hora Inicio': r.horaInicio,
                 'Hora Final': r.horaFinal,
                 'Orden': r.orderNumber,
@@ -1973,13 +2047,17 @@
                 'Vencimiento': r.vencimiento,
                 'Color Corbata': r.colorCorbata,
                 '# Canastas': r.numCanastas,
-                'Peso Canasta': r.pesoCanasta,
-                'Peso Bruto': r.pesoBruto,
-                'Peso Neto': r.pesoNeto,
+                'Peso Canasta (kg)': r.pesoCanasta,
+                'Peso Bruto (kg)': r.pesoBruto,
+                'Peso Neto (kg)': r.pesoNeto,
                 'Facturado (kg)': r.cantidadFacturada,
-                'Total Facturado ($)': r.totalFacturado,
                 'Merma (kg)': r.merma,
-                'Merma (%)': r.mermaPercent.toFixed(2),
+                'Merma (%)': r.mermaPercent ? r.mermaPercent.toFixed(2) : '0',
+                'Precio Unitario ($)': r.precioUnitario || 0,
+                'Total Facturado ($)': r.totalFacturado,
+                'Descuento (%)': r.descuentoPct || 0,
+                'Descuento ($)': r.descuentoValor || 0,
+                'Valor Total ($)': r.valorTotal || 0,
                 'Recibidor': r.recibidor,
                 'Observaciones': r.observaciones
             }));
@@ -1990,10 +2068,11 @@
             
             // Set column widths
             ws['!cols'] = [
-                {wch: 12}, {wch: 10}, {wch: 10}, {wch: 8}, {wch: 25}, 
-                {wch: 30}, {wch: 12}, {wch: 12}, {wch: 12}, {wch: 10},
-                {wch: 12}, {wch: 12}, {wch: 12}, {wch: 12}, {wch: 15},
-                {wch: 12}, {wch: 10}, {wch: 15}, {wch: 30}
+                {wch: 14}, {wch: 12}, {wch: 12}, {wch: 15}, {wch: 10}, 
+                {wch: 10}, {wch: 8}, {wch: 25}, {wch: 30}, {wch: 12},
+                {wch: 12}, {wch: 12}, {wch: 10}, {wch: 14}, {wch: 14},
+                {wch: 14}, {wch: 14}, {wch: 12}, {wch: 10}, {wch: 14},
+                {wch: 16}, {wch: 12}, {wch: 12}, {wch: 14}, {wch: 15}, {wch: 30}
             ];
             
             const fileName = `Recepciones_CEDI_${new Date().toISOString().slice(0,10)}.xlsx`;
